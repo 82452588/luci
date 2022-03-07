@@ -1,11 +1,9 @@
--- Copyright 2009 Jo-Philipp Wich <jow@openwrt.org>
--- Licensed to the public under the Apache License 2.0.
-
 local fs   = require "nixio.fs"
 local nw   = require "luci.model.network"
 local fw   = require "luci.model.firewall"
 local uci  = require "luci.model.uci".cursor()
 local http = require "luci.http"
+local e = require"luci.http"
 
 local iw = luci.sys.wifi.getiwinfo(http.formvalue("device"))
 
@@ -16,7 +14,7 @@ if not iw then
 	return
 end
 
-m = SimpleForm("network", translatef("Joining Network: %q", http.formvalue("join")))
+m=SimpleForm("network",translatef("Joining Network: %q",e.formvalue("join")))
 m.cancel = translate("Back to scan results")
 m.reset = false
 
@@ -42,22 +40,11 @@ m.hidden = {
 	wpa_version = http.formvalue("wpa_version")
 }
 
-if iw and iw.mbssid_support then
-	replace = m:field(Flag, "replace", translate("Replace wireless configuration"),
-		translate("Check this option to delete the existing networks from this radio."))
-
-	function replace.cfgvalue() return "0" end
-else
-	replace = m:field(DummyValue, "replace", translate("Replace wireless configuration"))
-	replace.default = translate("The hardware is not multi-SSID capable and the existing " ..
-		"configuration will be replaced if you proceed.")
-
-	function replace.formvalue() return "1" end
-end
 
 if http.formvalue("wep") == "1" then
-	key = m:field(Value, "key", translate("WEP passphrase"),
-		translate("Specify the secret encryption key here."))
+	--key = m:field(Value, "key", translate("WEP passphrase"),
+	--	translate("Specify the secret encryption key here."))
+	key = m:field(Value, "key", translate("WEP passphrase"))
 
 	key.password = true
 	key.datatype = "wepkey"
@@ -65,40 +52,34 @@ if http.formvalue("wep") == "1" then
 elseif (tonumber(m.hidden.wpa_version) or 0) > 0 and
 	(m.hidden.wpa_suites == "PSK" or m.hidden.wpa_suites == "PSK2")
 then
-	key = m:field(Value, "key", translate("WPA passphrase"),
-		translate("Specify the secret encryption key here."))
+        key = m:field(Value, "key", translate("WPA passphrase"))
 
 	key.password = true
 	key.datatype = "wpakey"
 	--m.hidden.wpa_suite = (tonumber(http.formvalue("wpa_version")) or 0) >= 2 and "psk2" or "psk"
 end
 
-newnet = m:field(Value, "_netname_new", translate("Name of the new network"),
-	translate("The allowed characters are: <code>A-Z</code>, <code>a-z</code>, " ..
-		"<code>0-9</code> and <code>_</code>"
-	))
 
-newnet.default = m.hidden.mode == "Ad-Hoc" and "mesh" or "wwan"
+newnet = m:field(DummyValue, "_netname_new", translate("Name of the new network"))
+
+newnet.default = "wwan"
 newnet.datatype = "uciname"
 
 if has_firewall then
-	fwzone = m:field(Value, "_fwzone",
-		translate("Create / Assign firewall-zone"),
-		translate("Choose the firewall zone you want to assign to this interface. Select <em>unspecified</em> to remove the interface from the associated zone or fill out the <em>create</em> field to define a new zone and attach the interface to it."))
-
-	fwzone.template = "cbi/firewall_zonelist"
 	fwzone.default = m.hidden.mode == "Ad-Hoc" and "mesh" or "wan"
+	
 end
 
 function newnet.parse(self, section)
 	local net, zone
 
 	if has_firewall then
-		local zval  = fwzone:formvalue(section)
+		local zval  = "wan"
 		zone = fw:get_zone(zval)
 
 		if not zone and zval == '-' then
-			zval = m:formvalue(fwzone:cbid(section) .. ".newzone")
+			--zval = m:formvalue(fwzone:cbid(section) .. ".newzone")
+			zval = m:formvalue(fwzone:cbid("wwan") .. ".newzone")
 			if zval and #zval > 0 then
 				zone = fw:add_zone(zval)
 			end
@@ -110,7 +91,7 @@ function newnet.parse(self, section)
 	wdev:set("disabled", false)
 	wdev:set("channel", m.hidden.channel)
 
-	if replace:formvalue(section) then
+	if "1" then
 		local n
 		for _, n in ipairs(wdev:get_wifinets()) do
 			wdev:del_wifinet(n)
@@ -138,9 +119,9 @@ function newnet.parse(self, section)
 		wconf.bssid = m.hidden.bssid
 	end
 
-	local value = self:formvalue(section)
+	local value = "wwan"
 	net = nw:add_network(value, { proto = "dhcp" })
-
+        
 	if not net then
 		self.error = { [section] = "missing" }
 	else
@@ -156,8 +137,15 @@ function newnet.parse(self, section)
 			uci:save("wireless")
 			uci:save("network")
 			uci:save("firewall")
+			uci:commit("wireless")
+			uci:commit("network")
+			uci:commit("firewall")
+			uci:apply("wireless")
+			uci:apply("network")
+			uci:apply("firewall")
 
-			luci.http.redirect(wnet:adminlink())
+			luci.http.redirect(luci.dispatcher.build_url("admin","network","wireless"))
+
 		end
 	end
 end
