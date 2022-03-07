@@ -45,7 +45,7 @@
 		button.style.display = 'none';
 		document.getElementById('reboot-message').parentNode.style.display = '';
 
-		(new XHR()).post('<%=controller%>/admin/system/reboot/call', { token: '<%=token%>' }, check);
+		(new XHR()).post('<%=controller%>/admin/network/reboot/call', { token: '<%=token%>' }, check);
 	}
 //]]></script>
 
