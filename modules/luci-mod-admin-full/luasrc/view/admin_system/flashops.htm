@@ -19,7 +19,7 @@
 		<legend><%:Backup / Restore%></legend>
 		<div class="cbi-section-descr"><%:Click "Generate archive" to download a tar archive of the current configuration files. To reset the firmware to its initial state, click "Perform reset" (only possible with squashfs images).%></div>
 		<div class="cbi-section-node">
-			<form class="inline" method="post" action="<%=url('admin/system/flashops/backup')%>">
+			<form class="inline" method="post" action="<%=url('admin/network/flashops/backup')%>">
 				<input type="hidden" name="token" value="<%=token%>" />
 				<div class="cbi-value<% if not reset_avail then %> cbi-value-last<% end %>">
 					<label class="cbi-value-title" for="image"><%:Download backup%>:</label>
@@ -29,7 +29,7 @@
 				</div>
 			</form>
 			<% if reset_avail then %>
-			<form class="inline" method="post" action="<%=url('admin/system/flashops/reset')%>">
+			<form class="inline" method="post" action="<%=url('admin/network/flashops/reset')%>">
 				<input type="hidden" name="token" value="<%=token%>" />
 				<div class="cbi-value cbi-value-last">
 					<label class="cbi-value-title"><%:Reset to defaults%>:</label>
@@ -40,42 +40,10 @@
 			</form>
 			<% end %>
 		</div>
-	<% local mtds = require("luci.sys").mtds(); if #mtds > 0 then -%>
-	<legend><%:Save mtdblock contents%></legend>
-	<div class="cbi-section-descr"><%:Click "Save mtdblock" to download specified mtdblock file. (NOTE: THIS FEATURE IS FOR PROFESSIONALS! )%></div>
-	<div class="cbi-section-node">
-		<form class="inline" method="post" action="<%=url('admin/system/flashops/backupmtdblock')%>">
-			<input type="hidden" name="token" value="<%=token%>" />
-			<div class="cbi-value">
-				<label class="cbi-value-title" for="mtdblockname"><%:Choose mtdblock%></label>
-				<div class="cbi-value-field">
-					<select class="cbi-input-select" data-update="change" name="mtdblockname" id="mtdblockname">
-						<% for i, key in ipairs(mtds) do
-							if key and key.name ~= "rootfs_data" then -%>
-								<option<%=
-									attr("id", "mtdblockname-" .. key.name) ..
-									attr("value", key.name .. '/'.. key.size .. '/' .. i - 1) ..
-									attr("data-index", i) ..
-									ifattr(key.name == "linux" or key.name == "firmware", "selected", "selected")
-								%>><%=pcdata(key.name)%></option>
-						<%	end
-						 end -%>
-					</select>
-				</div>
-			</div>
-			<div class="cbi-value cbi-value-last<% if reset_avail then %> cbi-value-error<% end %>">
-				<label class="cbi-value-title" for="image"><%:Download mtdblock%></label>
-				<div class="cbi-value-field">
-					<input class="cbi-button cbi-button-apply" type="submit" value="<%:Save mtdblock%>" />
-				</div>
-			</div>
-		</form>
-	</div>
-	<% end %>
 		<br />
 		<div class="cbi-section-descr"><%:To restore configuration files, you can upload a previously generated backup archive here.%></div>
 		<div class="cbi-section-node">
-			<form class="inline" method="post" action="<%=url('admin/system/flashops/restore')%>" enctype="multipart/form-data">
+			<form class="inline" method="post" action="<%=url('admin/network/flashops/restore')%>" enctype="multipart/form-data">
 				<div class="cbi-value cbi-value-last">
 					<label class="cbi-value-title" for="archive"><%:Restore backup%>:</label>
 					<div class="cbi-value-field">
@@ -93,7 +61,7 @@
 	<fieldset class="cbi-section">
 		<legend><%:Flash new firmware image%></legend>
 		<% if upgrade_avail then %>
-			<form method="post" action="<%=url('admin/system/flashops/sysupgrade')%>" enctype="multipart/form-data">
+			<form method="post" action="<%=url('admin/network/flashops/sysupgrade')%>" enctype="multipart/form-data">
 				<input type="hidden" name="token" value="<%=token%>" />
 				<div class="cbi-section-descr"><%:Upload a sysupgrade-compatible image here to replace the running firmware. Check "Keep settings" to retain the current configuration (requires a compatible firmware image).%></div>
 				<div class="cbi-section-node">
